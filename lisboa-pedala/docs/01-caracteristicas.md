@@ -14,7 +14,7 @@ Seguindo a metodologia de Richards & Ford, este ficheiro organiza-se em:
 ## 2. Características candidatas
 | Característica Candidata | Tipo | Categoria | Pista/Excertos |
 | :---------------- | :------: | :----: | ----: |
-| Elasticidade a pedido | Implícita | *Cloud* | "Cerca de 70% dos desbloqueios acontecem entre as 8h00–9h30 e as 17h30–19h00\. Em eventos (Santos Populares, maratona) a procura em algumas estações multiplica por 4." |
+| Elasticidade a pedido | Implícita | *Cloud* | "Cerca de 70% dos desbloqueios acontecem entre as 8h00–9h30 e as 17h30–19h00. Em eventos (Santos Populares, maratona) a procura em algumas estações multiplica por 4." |
 | Disponibilidade | Implícita | Operacionais | "O contrato de concessão aplica uma multa por cada hora em que mais de 10% das estações não conseguirem desbloquear bicicletas." |
 | Robustez | Implícita | Operacionais | "As docas comunicam por rede móvel e há zonas onde a rede falha com frequência." |
 | Privacidade | Explícita | Transversais | "O percurso de cada viagem é dado pessoal (RGPD)." |
@@ -28,7 +28,7 @@ O Top 3 escolhido foi **Disponibilidade; Elasticidade a pedido e Privacidade**:
 - **Elasticidade a pedido (On-Demand Elasticity)**: quase toda a gente usa as bicicletas à mesma hora (nas horas de ponta ou em dias de grandes eventos). O sistema tem de conseguir aumentar a sua capacidade sozinho durante esses picos para não encravar, e voltar ao normal quando a cidade acalma para não gastar dinheiro em servidores desnecessários;
 - **Privacidade**: como o GPS regista o caminho exato de cada viagem, estes dados são muito sensíveis. O sistema tem de separar a identidade da pessoa do percurso que ela fez antes de guardar a informação, para que seja impossível saber por onde um utilizador específico esteve a andar.
 
-### 3.1. Outras coinsideradas
+### 3.1. Outras consideradas
 As outras características que foram consideradas para o Top 3 foram:
 - **Robustez**:
     - *O que significa:* é a capacidade de as estações aguentarem falhas técnicas (como a internet cair) sem irem abaixo;
@@ -50,7 +50,7 @@ Uma característica composta para este sistema seria a **agilidade**. A agilidad
 3. **Deployabilidade**: permite lançar melhorias ou correções rapidamente e sem ter de desligar o sistema para os utilizadores.
 
 ## 5. Cenários concretos
-Para cada característica do Top 3, é necessário um cenário concreta do que significa neste sistema:
+Para cada característica do Top 3, é necessário um cenário concreto do que significa neste sistema:
 - **Disponibilidade**
     - *O que acontece*: a ligação de internet falha em 15 estações na hora de ponta da manhã;
     - *O que o sistema faz*: a estação passa a trabalhar sozinha em modo offline, permitindo que as pessoas continuem a tirar e devolver bicicletas normalmente com o cartão ou a app. Assim que a internet voltar, a estação envia os dados das viagens pendentes para o servidor;

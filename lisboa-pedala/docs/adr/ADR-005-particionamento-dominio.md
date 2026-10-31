@@ -1,7 +1,7 @@
 # ADR-005: Particionamento de Topo por Domínio e Validação com Fitness Functions
 
-* **Data:** 2026-10-30
-* **Estado:** Aceite
+- **Data:** 2026-10-30
+- **Estado:** Revisto (substituído pelo ADR-007)
 
 ## Contexto
 
@@ -21,3 +21,5 @@ Era necessário decidir a organização da raiz do código-fonte (`src/`) no rep
 
 - **Vantagens:** elevada coesão por pasta, autonomia de trabalho entre os elementos da equipa (`CODEOWNERS`) e deteção automática de erros de arquitetura no *build*;
 - **Trade-offs / Custos:** alterações técnicas transversais afetam múltiplos pacotes; exige guardar utilitários genéricos na pasta `src/shared/`.
+
+***Nota de Revisão* (2026-10-31):** as regras iniciais de importação deste ADR originavam um ciclo bidirecional entre utilizadores e faturação e impediam a notificação de viagens para cobrança. Estas regras foram revistas e substituídas pelo ADR-007.

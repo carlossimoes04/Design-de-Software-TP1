@@ -85,13 +85,11 @@ O componente `GestaoViagens` tem como única responsabilidade gerir o ciclo de v
   - **É chamado por** ($C_a = 2$):
     - `GestaoViagens`: no desbloqueio;
     - `FaturacaoEPagamentos`: para validar elegibilidade e benefícios de passe.
-  - **Chama** ($C_e = 1$):
-    - `FaturacaoEPagamentos`: ao requisitar a emissão/pagamento de um passe anual ou consulta de faturas.
+  - **Chama** ($C_e = 0$): nenhum
 
 - **FaturacaoEPagamentos**
-  - **É chamado por** ($C_a = 2$):
+  - **É chamado por** ($C_a = 1$):
     - `GestaoViagens`: ao fechar viagem;
-    - `ContaUtilizador`: para pagamentos de passes e faturas.
   - **Chama** ($C_e = 2$):
     - `GestaoTarifarios`: para obter a tabela de preços e blocos;
     - `ContaUtilizador`: para confirmar dados do perfil/plano.
@@ -133,16 +131,16 @@ O componente `GestaoViagens` tem como única responsabilidade gerir o ciclo de v
 |---|:---:|:---:|:---:|---|
 | `GestaoTarifarios` | 1 | 0 | **0,00** | **Totalmente Estável** |
 | `ManutencaoFrota` | 1 | 0 | **0,00** | **Totalmente Estável** |
-| `ContaUtilizador` | 2 | 1 | **0,33** | **Estável** |
+| `ContaUtilizador` | 2 | 0 | **0,00** | **Totalmente Estável** |
 | `MonitorizacaoEstacoes` | 2 | 1 | **0,33** | **Estável** |
-| `FaturacaoEPagamentos` | 2 | 2 | **0,50** | **Equilibrado** |
+| `FaturacaoEPagamentos` | 1 | 2 | **0,67** | **Moderadamente Instável** |
 | `GestaoViagens` | 2 | 3 | **0,60** | **Moderadamente Instável** |
 | `RedistribuicaoFrota` | 0 | 1 | **1,00** | **Totalmente Instável** |
 | `RelatoriosMunicipais` | 0 | 1 | **1,00** | **Totalmente Instável** |
 | `SincronizacaoDocas` | 0 | 1 | **1,00** | **Totalmente Instável** |
 
 - **Componentes de base** (estáveis) ($I \le 0{,}33$): `GestaoTarifarios`, `ContaUtilizador` e `MonitorizacaoEstacoes` guardam a informação essencial do sistema. Como vários módulos dependem deles, qualquer mudança na forma como comunicam exige muito cuidado para não estragar o que já funciona;
-- **Componentes de coordenação** (equilibrados) ($I = 0{,}50$ a $0{,}60$): `GestaoViagens` e `FaturacaoEPagamentos` gerem as ações do utilizador no dia a dia. Estão no meio da ponte: pedem dados aos componentes de base e fornecem informação aos componentes finais;
+- **Componentes de coordenação** (moderadamente instáveis) ($I = 0{,}60$ a $0{,}67$): `GestaoViagens` e `FaturacaoEPagamentos` gerem as ações do utilizador no dia a dia. Estão no meio da ponte: pedem dados aos componentes de base e fornecem informação aos componentes finais;
 - **Componentes independentes** (fáceis de mudar) ($I = 1{,}00$): `RedistribuicaoFrota`, `RelatoriosMunicipais` e `SincronizacaoDocas` tratam de tarefas específicas. Como nenhum outro módulo depende deles para funcionar, podem ser alterados ou reescritos por completo sem qualquer risco para o resto da aplicação;
 
 ## 5. Conascência, Acoplamento Temporal e Reestruturação 

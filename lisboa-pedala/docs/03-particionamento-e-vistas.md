@@ -47,12 +47,11 @@ A vista de módulos mostra como o código está organizado em pastas e ficheiros
 ### 2.2. Tabela de permissões de importação (*Allowed-to-Use*) 
 | Módulo de Código | Pode Importar / Utilizar (*Allowed-to-Use*) | Importações Proibidas (Exemplos) | 
 | :--- | :--- | :--- | 
-| **`viagens`** | `utilizadores`, `estacoes`, `shared` | **Proibido importar** `faturacao`, `relatorios` e `manutencao`. | 
-| **`utilizadores`** | `faturacao`, `shared` | **Proibido importar** `viagens` e `estacoes`. | 
+| **`viagens`** | `utilizadores`, `estacoes`, `faturacao`, `shared` | **Proibido importar** `relatorios` e `manutencao`. | 
+| **`utilizadores`** | `shared` | **Proibido importar** `viagens`, `estacoes` e `faturacao`. | 
 | **`faturacao`** | `utilizadores`, `shared` | **Proibido importar** `viagens` (recebe os dados da viagem por parâmetro para evitar ciclos). |
 | **`estacoes`** | `manutencao`, `shared` | **Proibido importar** `faturacao`, `viagens` e `relatorios`. |
 | **`manutencao`** | `shared` | Módulo autónomo; **proibido importar qualquer outro módulo de negócio**. |
-| **`redistribuicao`** | `estacoes`, `shared` | **Proibido importar** `faturacao` e `utilizadores`. |
 | **`relatorios`** | `viagens`, `shared` | **Proibido alterar dados** ou importar `faturacao` e `manutencao` diretamente. |
 | **`shared`** | *Nenhum módulo de negócio* | É o módulo utilitário base e **não pode importar nenhum módulo de domínio**. |
 
@@ -90,8 +89,7 @@ Esta vista mostra como o sistema funciona **em tempo de execução** para o flux
 ## 4. Vista de alocação (infraestrutura e CODEOWNERS) 
 Esta vista descreve onde cada parte do sistema corre fisicamente na infraestrutura e como a responsabilidade do código está dividida entre os **dois elementos do grupo**.
 
-### 
-4.1. Mapeamento físico (onde corre cada parte) 
+###  4.1. Mapeamento físico (onde corre cada parte) 
 - **Ambiente de Execução Python 3.11:** o backend corre como um processo Python 3.11 num ambiente local ou contentorizado;
 - **Interface do Utilizador:** cliente CLI ou pontos de extremidade API REST HTTP (sem necessidade de GUI);
 - **Persistência de Dados:** base de Dados **SQLite** em ficheiro local (`lisboa_pedala.db`) ou em memória para testes, dispensando servidores de base de dados pesados (como MySQL/PostgreSQL);
