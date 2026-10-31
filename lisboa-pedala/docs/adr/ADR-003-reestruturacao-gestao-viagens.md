@@ -17,7 +17,7 @@ Refatorar o `GestaoViagens` para garantir **Coesão Funcional (Nível 1 na Escal
 
 ## Alternativas Rejeitadas
 
-- **Manter a estrutura sobredimensionada inicial (*God Component*):** Rejeitada porque tornava o componente complexo, difícil de testar e fortemente acoplado a sistemas financeiros e de notificação.
+- **Manter a estrutura sobredimensionada inicial:** Rejeitada porque tornava o componente complexo, difícil de testar e fortemente acoplado a sistemas financeiros e de notificação.
 
 ## Consequências
 
