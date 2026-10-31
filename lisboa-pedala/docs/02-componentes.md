@@ -143,17 +143,32 @@ O componente `GestaoViagens` tem como única responsabilidade gerir o ciclo de v
 - **Componentes de coordenação** (moderadamente instáveis) ($I = 0{,}60$ a $0{,}67$): `GestaoViagens` e `FaturacaoEPagamentos` gerem as ações do utilizador no dia a dia. Estão no meio da ponte: pedem dados aos componentes de base e fornecem informação aos componentes finais;
 - **Componentes independentes** (fáceis de mudar) ($I = 1{,}00$): `RedistribuicaoFrota`, `RelatoriosMunicipais` e `SincronizacaoDocas` tratam de tarefas específicas. Como nenhum outro módulo depende deles para funcionar, podem ser alterados ou reescritos por completo sem qualquer risco para o resto da aplicação;
 
-## 5. Conascência, Acoplamento Temporal e Reestruturação 
+## 5. Conascência, Acoplamento Temporal, Lei de Deméter e Reestruturação 
 ### 5.1. Conascência entre Componentes 
-A conascência ocorre quando uma alteração num componente exige uma alteração noutro para manter o funcionamento correto do sistema. 
+Dois componentes apresentam conascência quando uma alteração num exige uma alteração no outro para manter o funcionamento correto do sistema (Meilir Page-Jones; Richards & Ford, Cap. 3).
+
+A gravidade do acoplamento por conascência é avaliada através de três propriedades fundamentais (Page-Jones / Jim Weirich):
+- **Força (Strength)**: mede a facilidade com que o programador descobre e refatora o acoplamento. As formas estáticas mais fracas são Nome e Tipo; as formas estáticas mais fortes são Significado e Algoritmo; as conascências dinâmicas (de execução, tempo ou valor) são as mais gravosas;
+- **Grau (Degree)**: mede o impacto pelo número de entidades envolvidas. Graus reduzidos têm impacto contido; graus elevados multiplicam o risco de falhas em cascata;
+- **Localidade (Locality)**: mede a proximidade física e arquitetural no código. Conascências fortes são perfeitamente aceitáveis se a localidade for próxima (dentro do mesmo módulo), mas tornam-se críticas quando atravessam fronteiras de pacotes. A regra de Page-Jones dita: *minimizar a conascência que cruza fronteiras e maximizar a conascência interna aos módulos*.
+
+Identificámos e mitigámos duas conascências centrais no sistema Lisboa Pedala:
 1. **Conascência de Significado (CoM - *Connascence of Meaning*):** 
     - **Componentes envolvidos:** `MonitorizacaoEstacoes` e `ManutencaoFrota`;
     - **Descrição:** ambos os componentes partilham a mesma convenção/significado para o estado operacional das bicicletas e docas (ex.: as cadeias de texto `"LIVRE"`, `"AVARIADA"`, `"EM_MANUTENCAO"`); 
+    - **Avaliação das Propriedades**:
+      - *Força*: **média/elevada** (forma estática). Se uma das pontas alterar a string livre, o compilador e o linter não detetam o erro de imediato;
+      - *Grau*: **grau 2** (baixo), restrito à coordenação entre os dois componentes;
+      - *Localidade*: *distante*, pois atravessa a fronteira entre dois pacotes de domínio distintos (`src/estacoes/` e `src/manutencao/`), aumentando o perigo de desalinhamento.
     - **Risco de Acoplamento:** se o `MonitorizacaoEstacoes` alterar o nome interno do estado de avaria para `NAO_OPERACIONAL` e o `ManutencaoFrota` não for atualizado em simultâneo, a criação automática de ordens de trabalho falha;
     - **Mitigação:** substituição de texto livre por um enumerado (`Enum`) partilhado ou contrato de API estritamente tipado. 
 2. **Conascência de Algoritmo (CoA - *Connascence of Algorithm*):**
     - **Componentes envolvidos:** `SincronizacaoDocas` e `GestaoViagens`
     - **Descrição:** Para responder à **US-3** (operação offline), a doca calcula um código de identificação único para cada viagem armazenada localmente. Tanto o `SincronizacaoDocas` como o `GestaoViagens` têm de usar **exatamente o mesmo algoritmo de cálculo de hash** (ex.: `SHA-256(docaId + bicicletaId + timestampInicio)`) para detetar e ignorar registos duplicados; 
+    - **Avaliação das Propriedades**:
+      - *Força*: **máxima entre as conascências estáticas** Uma discrepância subtil na concatenação ou codificação quebra a deteção de duplicados sem originar exceções imediatas;
+      - *Grau*: **grau 2 a 3** (baixo a moderado: software da doca, módulo de sincronização e backend de viagens);
+      - *Localidade*: **próxima no backend**, (ambos residem em `src/viagens/`), mas **distante na simulação** (comunicação entre a doca e o servidor central).
     - **Risco de Acoplamento:** Se o `SincronizacaoDocas` alterar a fórmula do hash sem o `GestaoViagens` atualizar a sua validação, a deteção de duplicados falha e o utilizador pode ser cobrado duas vezes;
     - **Mitigação:** Isolamento do algoritmo numa biblioteca de utilidade única e partilhada.
 
@@ -166,7 +181,21 @@ O acoplamento temporal descreve dependências que exigem uma ordem específica n
     - **Componentes:** `GestaoViagens` $\leftrightarrow$ `MonitorizacaoEstacoes` 
     - **Descrição:** na devolução da bicicleta, o fecho da viagem em `GestaoViagens` e a alteração do estado da doca de "OCUPADA" para "LIVRE" em `MonitorizacaoEstacoes` têm de ser executados **na mesma unidade de trabalho**. Se a transação falhar a meio, a doca pode ficar bloqueada no sistema ou a viagem continuar ativa indevidamente.
 
-### 5.3. Iteração de Reestruturação Documentada 
+### 5.3. Aplicação da Lei de Deméter (Princípio do Menor Conhecimento)
+A **Lei de Deméter (LoD)**, ou *Princípio do Menor Conhecimento* (Aula 4; Richards & Ford, Cap. 8), estabelece que um componente deve possuir conhecimento limitado sobre outros componentes, interagindo exclusivamente com os seus colaboradores/vizinhos imediatos ("falar apenas com amigos próximos e nunca com os amigos dos amigos").
+
+No sistema Lisboa Pedala, a Lei de Deméter foi fundamental para evitar acoplamento desnecessário e dispersão de regras de negócio:
+
+1. **Desacoplamento do Ciclo de Viagem e Faturação** (`GestaoViagens` $\rightarrow$ `FaturacaoEPagamentos`):
+    - **Violação evitada**: se a LoD fosse ignorada, o componente `GestaoViagens`, ao processar a devolução mecânica, teria de conhecer as regras de negócio de `GestaoTarifarios` (os 45 min grátis do passe anual e os blocos de 15 min), inspecionar os métodos de pagamento em `ContaUtilizador`, invocar diretamente a Gateway de Pagamentos e registar a comunicação com a Autoridade Tributária. Isto tornaria `GestaoViagens` fortemente acoplado a regras fiscais e financeiras voláteis;
+    - **Aplicação da LoD**: o `GestaoViagens` limita-se a produzir e enviar o resumo da viagem (`viagem_id`, `utilizador_id`, `duracao_minutos`) ao seu vizinho imediato, `FaturacaoEPagamentos`. O `GestaoViagens` **não sabe nem precisa de saber** se a viagem tem custo, como se calculam excedentes ou como é feita a cobrança. É o `FaturacaoEPagamentos` que encapsula todo o conhecimento do domínio financeiro.
+2. **Desacoplamento na Autorização de Desbloqueio** (`GestaoViagens` $\rightarrow$ `ContaUtilizador`):
+    - O `GestaoViagens` não inspeciona a estrutura interna do utilizador (se tem faturas pendentes, NIF, saldo ou data de renovação do passe). Comunica unicamente através do método de consulta direta `validar_permissao_desbloqueio(utilizador_id)` em `ContaUtilizador`, recebendo apenas a resposta booleana necessária para libertar a tranca.
+3. **Impacto Arquitetural - Redistribuição do Acoplamento**:
+    - Como destacado na Aula 4, **a Lei de Deméter redistribui o acoplamento, não o elimina**. Ao retirar o conhecimento tarifário de `GestaoViagens`, esse acoplamento transferiu-se para `FaturacaoEPagamentos` (que passa a chamar `GestaoTarifarios` e `ContaUtilizador`);
+    - **Ganho de Localidade**: ganhámos em coesão e localidade: alterações fiscais ou novos planos tarifários das câmaras municipais mudam exclusivamente no módulo `faturacao`, sem afetar o ciclo crítico de desbloqueio e devolução de bicicletas.
+
+### 5.4. Iteração de Reestruturação Documentada 
 - **Componente Afetado:** `GestaoViagens` 
 - **Motivo da Reestruturação:** na versão inicial do design, o componente `GestaoViagens` acumulava a responsabilidade mecânica da viagem, a validação de passes e o cálculo financeiro/emissão de recibos. Esta acumulação violava a **Coesão Funcional** (falhando no *Teste das Conjunções*) e criava um acoplamento eferente ($C_e$) excessivo com sistemas de pagamento e notificações. 
 - **Ação de Refactoring Aplicada:** 
