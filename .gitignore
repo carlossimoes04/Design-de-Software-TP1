@@ -1,0 +1,17 @@
+# 1. Bytecode do Python e pastas de cache em todo o projeto
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 2. Caches de testes e linters
+.pytest_cache/
+.import_linter_cache/
+
+# 3. Ambientes virtuais
+.venv/
+venv/
+ENV/
+
+# 5. Configurações de IDEs (opcional, mas recomendado)
+.vscode/
+.idea/
