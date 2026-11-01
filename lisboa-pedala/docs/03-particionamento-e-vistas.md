@@ -99,14 +99,14 @@ Esta vista descreve onde cada parte do sistema corre fisicamente na infraestrutu
 Dividimos os 9 componentes lógicos de forma equilibrada entre os **dois elementos do grupo**: 
 | Diretório / Módulo | Componentes Lógicos | Elemento Responsável | 
 | :--- | :--- | :--- | 
-| **`src/viagens/`** | `GestaoViagens` e `SincronizacaoDocas` | **Aluno 1** | 
-| **`src/utilizadores/`** | `ContaUtilizador` | **Aluno 1** | 
-| **`src/relatorios/`** | `RelatoriosMunicipais` | **Aluno 1** | 
-| **`src/faturacao/`** | `FaturacaoEPagamentos` e `GestaoTarifarios` | **Aluno 2** | 
-| **`src/estacoes/`** | `MonitorizacaoEstacoes` e `RedistribuicaoFrota` | **Aluno 2** | 
-| **`src/manutencao/`** | `ManutencaoFrota` | **Aluno 2** | 
-| **`src/shared/`** | Código comum, utilitários e ligação à BD | **Aluno 1 e Aluno 2** *(Trabalho conjunto)* |
-| **`tests/architecture/`** | Fitness Functions (`import-linter`) | **Aluno 1 e Aluno 2** *(Trabalho conjunto)*
+| **`src/viagens/`** | `GestaoViagens` e `SincronizacaoDocas` | **Carlos Simões** | 
+| **`src/utilizadores/`** | `ContaUtilizador` | **Carlos Simões** | 
+| **`src/relatorios/`** | `RelatoriosMunicipais` | **Carlos Simões** | 
+| **`src/faturacao/`** | `FaturacaoEPagamentos` e `GestaoTarifarios` | **Joana Ramos** | 
+| **`src/estacoes/`** | `MonitorizacaoEstacoes` e `RedistribuicaoFrota` | **Joana Ramos** | 
+| **`src/manutencao/`** | `ManutencaoFrota` | **Joana Ramos** | 
+| **`src/shared/`** | Código comum, utilitários e ligação à BD | **Carlos Simões e Joana Ramos** *(Trabalho conjunto)* |
+| **`tests/architecture/`** | Fitness Functions (`import-linter`) | **Carlos Simões e Joana Ramos** *(Trabalho conjunto)* |
 
 ### Razão desta Divisão
 - **Equilíbrio de trabalho:** cada elemento fica responsável por 4 a 5 componentes com complexidade semelhante; 
