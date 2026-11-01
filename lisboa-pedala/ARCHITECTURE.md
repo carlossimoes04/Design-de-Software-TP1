@@ -5,11 +5,11 @@ Todo o código gerado deve respeitar integralmente as regras aqui descritas. Nen
 
 ## 1. Identificação e Papel dos Componentes
 
-O sistema está dividido em domínios em **9 componentes lógicos** sistribuídos nos respetivos pacotes Python em `src/`:
+O sistema está dividido em domínios em **9 componentes lógicos** distribuídos nos respetivos pacotes Python em `src/`:
 
 |Componente Lógico|Pacote / Namespace|Responsabilidade|
 |:---|:---|:---|
-|`GestaoViagem`|`src.viagens.gestao_viagens`|Orquestra o ciclo da vida completo de desbloqueio, acompanhamento e fecho de viagens de bicicletas.|
+|`GestaoViagens`|`src.viagens.gestao_viagens`|Orquestra o ciclo da vida completo de desbloqueio, acompanhamento e fecho de viagens de bicicletas.|
 |`SincronizacaoDocas`|`src.viagens.sincronizacao_docas`|Processa e desduplica registos diferidos de viagens enviados em lote pelas docas offline.|
 |`ContaUtilizador`|`src.utilizadores.conta_utilizador`|Valida passes, gere estados de utilizadores e autentica pedidos de utilização.|
 |`MonitorizacaoEstacoes`|`src.estacoes.monitorizacao_estacoes`|Gere a ocupação, o estado mecânico das docas e o inventário em tempo real por estação.|
@@ -18,7 +18,6 @@ O sistema está dividido em domínios em **9 componentes lógicos** sistribuído
 |`GestaoTarifarios`|`src.faturacao.gestao_tarifarios`|Aplica as regras de cálculo de custo base e excedentes por patamar de tempo e tipo de utilizador.|
 |`ManutencaoFrota`|`src.manutencao.manutencao_frota`|Gere o ciclo de vida das ordens de trabalho e avarias reportadas para reparação de bicicletas.|
 |`RelatoriosMunicipais`|`src.relatorios.relatorios_municipais`|Compila estatísticas anónimas de utilização por freguesia e estima o $CO_2$ evitado.|
-||||
 
 *Nota*: O pacote utilitário partilhado reside em `src.shared` e contém a conectividade SQLite, modelos DTOs e utilitários de encriptação / *hashing*.
 
@@ -31,16 +30,19 @@ O sistema está dividido em domínios em **9 componentes lógicos** sistribuído
 Em conformidade com o **ADR-007**, as dependências entre pacotes formam um Grafo Acíclico Dirigido (DAG). As regras seguintes são **verificáveis por *fitness functions* (`import-linter`) e constituem restrições duras**:
 
 ```
-[src.viagens] ────> [src.faturacao] ────> [src.utilizadores]
-      │                     ^                     ^
-      v                     │                     │
-[src.estacoes] ─────────────┴─────────────────────┘
-      │
-      v
-[src.manutencao]
-      ^
-      │ (todos podem usar)
-[src.shared]
+                 [src.relatorios]
+                        │
+                        ▼
+                 [src.viagens] ──────────────────────────┐
+                  │          │                           │
+                  ▼          ▼                           ▼
+           [src.estacoes]  [src.faturacao] ────► [src.utilizadores]
+                  │
+                  ▼
+           [src.manutencao]
+
+═══════════════════════════════════════════════════════════════════
+[src.shared] (camada utilitária base — importada por todos os módulos)
 ```
 
 ### Regras Estritas de Importação:
