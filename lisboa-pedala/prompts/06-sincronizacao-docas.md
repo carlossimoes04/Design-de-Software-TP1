@@ -7,7 +7,7 @@
   - `docs/adr/ADR-001-top3-caracteristicas.md`
   - `docs/adr/ADR-004-sincronizacao-docas.md`
 - **Ferramenta / Modelo de IA:** Antigravity (Gemini 3.8 Flash High)
-- **Estado:** ✅ **ACEITE**
+- **Estado:** **ACEITE**
 
 ---
 

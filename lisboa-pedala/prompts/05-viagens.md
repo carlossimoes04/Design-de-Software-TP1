@@ -9,7 +9,7 @@
   - `docs/adr/ADR-003-reestruturacao-gestao-viagens.md`
   - `docs/adr/ADR-007-regras-importacao-direcionalidade.md`
 - **Ferramenta / Modelo de IA:** Antigravity (Gemini 3.8 Flash High)
-- **Estado:** ✅ **ACEITE**
+- **Estado:** **ACEITE**
 
 ---
 
