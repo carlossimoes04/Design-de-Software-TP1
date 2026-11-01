@@ -1,6 +1,8 @@
 """
 Componente MonitorizacaoEstacoes (src.estacoes.monitorizacao_estacoes).
 Responsabilidade: Gestão da ocupação e estado mecânico das docas em tempo real.
+Contrato: Apenas pode importar src.manutencao e src.shared.
+Conformidade: ADR-007 e Contrato 4 do .importlinter.
 """
 
 from typing import Optional, List
@@ -8,15 +10,12 @@ from src.shared.db import get_connection
 from src.shared.models import EstacaoDTO, DocaDTO, EstadoDoca
 from src.shared.simuladores import SimuladorDoca
 
-from src.utilizadores.conta_utilizador import ContaUtilizador
-
 
 class MonitorizacaoEstacoes:
     """Gere o inventário das estações e a operação mecânica das docas."""
 
     def __init__(self, db_path: Optional[str] = None):
         self.db_path = db_path
-        self.conta_utilizador = ContaUtilizador(db_path)
 
     def obter_estacao(self, estacao_id: str) -> Optional[EstacaoDTO]:
         """Obtém os detalhes de uma estação."""
@@ -74,16 +73,11 @@ class MonitorizacaoEstacoes:
             for r in rows
         ]
 
-    def destrancar_bicicleta_doca(self, doca_id: str, utilizador_id: str) -> tuple[bool, str, Optional[str]]:
+    def destrancar_bicicleta_doca(self, doca_id: str) -> tuple[bool, str, Optional[str]]:
         """
-        Liberta a bicicleta de uma doca.
-        ⚠️ Método gerado com acoplamento indevido a ContaUtilizador.
+        Liberta a bicicleta de uma doca para início de viagem (US-1).
+        Focado estritamente na doca física, sem acoplamento a utilizadores.
         """
-        # Violação: Estações a verificar regras de contas de utilizadores
-        valido, motivo = self.conta_utilizador.validar_elegibilidade_desbloqueio(utilizador_id)
-        if not valido:
-            return False, f"Desbloqueio recusado: {motivo}", None
-
         conn = get_connection(self.db_path)
         cursor = conn.cursor()
         cursor.execute("SELECT id, bicicleta_id, estado FROM docas WHERE id = ?", (doca_id,))
@@ -114,7 +108,7 @@ class MonitorizacaoEstacoes:
         return True, "Bicicleta destrancada com sucesso.", bicicleta_id
 
     def receber_bicicleta_doca(self, doca_id: str, bicicleta_id: str) -> tuple[bool, str]:
-        """Encaixa e tranca uma bicicleta numa doca livre (devolução US-1)."""
+        """Encaixa e tranca uma bicicleta numa doca livre no fecho da viagem (US-1)."""
         conn = get_connection(self.db_path)
         cursor = conn.cursor()
         cursor.execute("SELECT id, estado FROM docas WHERE id = ?", (doca_id,))
@@ -128,11 +122,11 @@ class MonitorizacaoEstacoes:
             conn.close()
             return False, "Doca de destino não está livre para receber bicicleta."
 
-        # Acionar simulador físico de encaixe
+        # Acionar simulador mecânico de fecho
         simulador = SimuladorDoca(doca_id)
         simulador.trancar(bicicleta_id)
 
-        # Atualizar estado na BD para OCUPADA
+        # Atualizar BD para OCUPADA com a nova bicicleta
         cursor.execute(
             "UPDATE docas SET bicicleta_id = ?, estado = ? WHERE id = ?",
             (bicicleta_id, EstadoDoca.OCUPADA.value, doca_id)
