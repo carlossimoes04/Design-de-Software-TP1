@@ -47,4 +47,39 @@ Restrições Arquiteturais Rígidas (Mandatórias):
 
 ## 3. Avaliação de Violações da Arquitetura
 
-- TODO
+- **Houve violação da arquitetura?** Não. O código gerado cumpriu todas as restrições arquiteturais à primeira tentativa.
+- **Validação com as *Fitness Functions*:**
+  O teste `tests/architecture/test_architecture.py` executou o `import-linter` sobre o repositório após a criação dos 5 ficheiros, validando o **Contrato 1** (`Shared nao pode importar modulos de dominio`):
+  ```text
+  =============
+  Import Linter
+  =============
+
+  ---------
+  Contracts
+  ---------
+
+  Analyzed 22 files, 0 dependencies.
+  ----------------------------------
+
+  Shared nao pode importar modulos de dominio KEPT
+  Utilizadores nao pode importar outros dominios KEPT
+  Manutencao nao pode importar outros dominios KEPT
+  Estacoes so pode importar manutencao e shared KEPT
+  Faturacao nao pode importar viagens nem estacoes KEPT
+  Viagens nao pode importar manutencao nem relatorios KEPT
+  Relatorios nao pode importar estacoes faturacao utilizadores ou manutencao KEPT
+
+  Contracts: 7 kept, 0 broken.
+
+  ============================== 1 passed in 0.54s ==============================
+  ```
+  O linter confirmou $C_e = 0$ para o pacote `src.shared` em relação aos domínios de negócio (apenas dependências internas à standard library).
+
+- **Revisão Humana de Restrições Específicas:**
+  1. **Privacidade e RGPD (ADR-001 / ARCHITECTURE.md 3.C):**  
+     A revisão manual do esquema DDL em `src/shared/db.py` confirmou a **dissociação estrutural**: não existe nenhuma tabela de telemetria GPS associada ao NIF ou identidade dos utilizadores. A tabela `viagens` referencia apenas os identificadores das docas (`doca_inicio_id`, `doca_fim_id`);
+  2. **Garantia de Idempotência (ADR-001 / ARCHITECTURE.md 3.A / US-3):**  
+     A revisão confirmou que a tabela `viagens` define uma restrição `UNIQUE` na coluna `hash_idempotencia` e que foi criada a tabela auxiliar `eventos_offline_processados` para suporte ao reenvio de lotes das docas sem duplicação de dados;
+  3. **Fachada Pública (`__init__.py`):**  
+     Verificado que a lista `__all__` reexporta apenas DTOs e funções utilitárias partilhadas, sem vazar implementações acopladas.
