@@ -14,12 +14,13 @@ Substituir a matriz de importações anterior por um modelo estritamente acícli
 1. **Autorizar `viagens` a importar `faturacao`:** permite que a devolução despolete diretamente a cobrança, mantendo a relação unidirecional (a faturação continua proibida de importar viagens);
 2. **Eliminar o ciclo `utilizadores` $\leftrightarrow$ `faturacao`:** retirar a autorização de `utilizadores` importar `faturacao`. O módulo `utilizadores` torna-se puramente estável ($C_e = 0, I = 0,00$), sendo apenas consultado por `faturacao` e `viagens`;
 3. **Desacoplamento via Interface:** operações como a consulta de faturas ou a subscrição de passes pelo utilizador passam a ser dirigidas diretamente pela interface (CLI / API REST) ao módulo `faturacao`, sem passar por `utilizadores` como intermediário;
-4. **Consolidação de Módulos:** tratar a dependência entre `RedistribuicaoFrota` e `MonitorizacaoEstacoes` como interna ao pacote `src/estacoes/`, fixando a tabela *Allowed-to-Use* exatamente nos 7 pacotes de código.
+4. **Consolidação de Módulos:** tratar a dependência entre `RedistribuicaoFrota` e `MonitorizacaoEstacoes` como interna ao pacote `src/estacoes/`, fixando a tabela *Allowed-to-Use* exatamente nos 7 pacotes de código;
+5. **Calibragem da Fitness Function para Dependências Transitivas (Contrato 7):** o contrato do linter para `relatorios` foi configurado com `allow_indirect_imports = true`. Como `relatorios` invoca legitimamente `viagens` ($C_e = 1$) para obter o histórico de viagens, e `viagens` orquestra `estacoes` e `faturacao`, a relação *Allowed-to-Use* visa proibir o acoplamento direto de `relatorios` aos restantes módulos de domínio (preservando o encapsulamento), sem impedir a resolução em runtime do grafo de dependências do Python.
 
 ## Alternativas Rejeitadas
 - **Manter chamadas bidirecionais com importações locais (*lazy imports*):** rejeitado por violar o ADP, fragilizar a arquitetura em tempo de execução e falhar na validação estática do *import-linter*;
 - **Desacoplar totalmente `viagens` de `faturacao` via orquestrador externo:** rejeitado para evitar complexidade desnecessária na CLI e garantir que a unidade de trabalho da devolução é concluída de ponta a ponta pelo backend.
 
 ## Consequências
-- **Vantagens:** grafo de dependências transformado num Grafo Acíclico Dirigido (DAG), eliminação de riscos de *circular import* no Python e garantia de validação limpa nas *fitness functions*. As métricas aferentes e eferentes ficam balanceadas ($\sum C_a = \sum C_e = 9$).
+- **Vantagens:** grafo de dependências transformado num Grafo Acíclico Dirigido (DAG), eliminação de riscos de *circular import* no Python e garantia de validação limpa nas *fitness functions*, com a diretiva `allow_indirect_imports = true` no Contrato 7 a assegurar que a ferramenta avalia a fronteira direta do componente e não o fecho transitivo em memória. As métricas aferentes e eferentes ficam balanceadas ($\sum C_a = \sum C_e = 9$).
 - **Trade-offs / Custos:** o módulo `viagens` passa a ter um acoplamento eferente adicional ($C_e = 3$).
