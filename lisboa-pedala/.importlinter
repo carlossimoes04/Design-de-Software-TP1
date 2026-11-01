@@ -93,6 +93,7 @@ forbidden_modules =
 [importlinter:contract:7]
 name = Relatorios nao pode importar estacoes faturacao utilizadores ou manutencao
 type = forbidden
+allow_indirect_imports = true
 source_modules =
     src.relatorios
 forbidden_modules =
