@@ -1,68 +1,69 @@
 """
 Componente FaturacaoEPagamentos (src.faturacao.faturacao_pagamentos).
-Responsabilidade: Processamento financeiro e emissão de faturas.
+Responsabilidade: Processamento financeiro, cobrança e emissão de faturas.
+Contrato: Unidirecional. Proibido importar viagens (recebe ViagemDTO por parâmetro).
+Conformidade: ADR-007 e Contrato 5 do .importlinter.
 """
 
 import uuid
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from src.shared.db import get_connection
-from src.shared.models import FaturaDTO, ViagemDTO
+from src.shared.models import FaturaDTO, ViagemDTO, TipoPasse
 from src.shared.simuladores import SimuladorPagamentos
 from src.faturacao.gestao_tarifarios import GestaoTarifarios
 
-from src.viagens.gestao_viagens import GestaoViagens
-
 
 class FaturacaoEPagamentos:
-    """Gere a cobrança de viagens e a emissão de faturas fiscais."""
+    """Gere a cobrança de viagens e a emissão de faturas fiscais em conformidade legal."""
 
     def __init__(self, db_path: Optional[str] = None):
         self.db_path = db_path
-        self.gestao_viagens = GestaoViagens(db_path)
 
-    def processar_cobranca_por_viagem_id(self, viagem_id: str) -> Optional[FaturaDTO]:
-        viagem = self.gestao_viagens.obter_viagem(viagem_id)
-        if not viagem:
-            return None
+    def processar_fecho_viagem(self, viagem: ViagemDTO, tipo_passe: TipoPasse) -> Tuple[float, FaturaDTO]:
+        """
+        Calcula o custo, processa o pagamento e emite a fatura da viagem (US-1).
+        Conformidade com ADR-007: Recebe ViagemDTO por parâmetro (sem importar viagens).
+        """
+        # 1. Apurar custo através das regras tarifárias oficiais
+        custo = GestaoTarifarios.calcular_custo_viagem(tipo_passe, viagem.duracao_minutos)
+        viagem.custo = custo
 
-        return self.emitir_fatura(viagem)
-
-    def emitir_fatura(self, viagem: ViagemDTO) -> FaturaDTO:
-        """Gera e grava a fatura fiscal na base de dados."""
+        # 2. Obter NIF do utilizador
         conn = get_connection(self.db_path)
         cursor = conn.cursor()
-
-        # Obter NIF do utilizador
         cursor.execute("SELECT nif FROM utilizadores WHERE id = ?", (viagem.utilizador_id,))
         row_user = cursor.fetchone()
         nif = row_user["nif"] if row_user else "999999990"
 
-        # Simular transação bancária
-        SimuladorPagamentos.processar_pagamento_cartao(nif, viagem.custo)
+        # 3. Processar cobrança através do simulador bancário (MB WAY / Cartão)
+        SimuladorPagamentos.processar_pagamento_cartao(nif, custo)
 
+        # 4. Gravar fatura fiscal no SQLite (retenção legal de 10 anos)
         fatura_id = f"FAT-{datetime.now().strftime('%Y%m')}-{uuid.uuid4().hex[:6].upper()}"
         data_emissao = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         cursor.execute("""
             INSERT INTO faturas (id, viagem_id, nif, valor, data_emissao, paga)
             VALUES (?, ?, ?, ?, ?, 1)
-        """, (fatura_id, viagem.id, nif, viagem.custo, data_emissao))
+        """, (fatura_id, viagem.id, nif, custo, data_emissao))
 
         conn.commit()
         conn.close()
 
-        return FaturaDTO(
+        fatura = FaturaDTO(
             id=fatura_id,
             viagem_id=viagem.id,
             nif=nif,
-            valor=viagem.custo,
+            valor=custo,
             data_emissao=data_emissao,
             paga=True
         )
 
+        return custo, fatura
+
     def listar_faturas_por_nif(self, nif: str) -> List[FaturaDTO]:
-        """Consulta o histórico de faturas por NIF (retenção de 10 anos)."""
+        """Consulta o histórico de faturas fiscais por NIF do utilizador."""
         conn = get_connection(self.db_path)
         cursor = conn.cursor()
         cursor.execute(
