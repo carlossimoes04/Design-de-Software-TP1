@@ -1,0 +1,102 @@
+[importlinter]
+root_package = src
+
+# Shared
+# O módulo shared é a fundação técnica: não pode importar nenhum pacote de domínio.
+
+[importlinter:contract:1]
+name = Shared nao pode importar modulos de dominio
+type = forbidden
+source_modules =
+    src.shared
+forbidden_modules =
+    src.viagens
+    src.utilizadores
+    src.estacoes
+    src.faturacao
+    src.manutencao
+    src.relatorios
+
+# Utilizadores
+# Só pode importar shared; proibido acoplar a qualquer outro domínio de negócio.
+
+[importlinter:contract:2]
+name = Utilizadores nao pode importar outros dominios
+type = forbidden
+source_modules =
+    src.utilizadores
+forbidden_modules =
+    src.viagens
+    src.estacoes
+    src.faturacao
+    src.manutencao
+    src.relatorios
+
+# Manutenção de Frota
+# Módulo autónomo de ordens de trabalho; não pode importar outros domínios.
+
+[importlinter:contract:3]
+name = Manutencao nao pode importar outros dominios
+type = forbidden
+source_modules =
+    src.manutencao
+forbidden_modules =
+    src.viagens
+    src.estacoes
+    src.faturacao
+    src.utilizadores
+    src.relatorios
+
+# Estações
+# Apenas autorizado a importar manutencao e shared.
+
+[importlinter:contract:4]
+name = Estacoes so pode importar manutencao e shared
+type = forbidden
+source_modules =
+    src.estacoes
+forbidden_modules =
+    src.viagens
+    src.faturacao
+    src.utilizadores
+    src.relatorios
+
+# Faturação e Pagamentos
+# Proibido importar viagens (recebe dados por parâmetro) e outros domínios.
+
+[importlinter:contract:5]
+name = Faturacao nao pode importar viagens nem estacoes
+type = forbidden
+source_modules =
+    src.faturacao
+forbidden_modules =
+    src.viagens
+    src.estacoes
+    src.manutencao
+    src.relatorios
+
+# Viagens
+# Pode importar utilizadores, estacoes e faturacao. Proibido manutencao e relatorios.
+
+[importlinter:contract:6]
+name = Viagens nao pode importar manutencao nem relatorios
+type = forbidden
+source_modules =
+    src.viagens
+forbidden_modules =
+    src.manutencao
+    src.relatorios
+
+# Relatórios Municipais
+# Apenas autorizado a ler historico de viagens e shared. Proibido aceder ao resto.
+
+[importlinter:contract:7]
+name = Relatorios nao pode importar estacoes faturacao utilizadores ou manutencao
+type = forbidden
+source_modules =
+    src.relatorios
+forbidden_modules =
+    src.estacoes
+    src.faturacao
+    src.utilizadores
+    src.manutencao
