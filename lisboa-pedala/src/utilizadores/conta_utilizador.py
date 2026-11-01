@@ -1,13 +1,13 @@
 """
-Componente ContaUtilizador (src.utilizadores).
-Responsabilidade: Validação de passes, estado do utilizador e autenticação de pedidos.
+Componente ContaUtilizador (src.utilizadores.conta_utilizador).
+Responsabilidade: Validação de passes, estado do utilizador e elegibilidade de utilização.
+Contrato Arquitetural: Puramente estável (Ce = 0). Apenas acopla a src.shared.
+Conformidade: ADR-002, ADR-007 e Contrato 2 do .importlinter.
 """
 
-from typing import Optional, List
+from typing import Optional
 from src.shared.db import get_connection
 from src.shared.models import UtilizadorDTO, TipoPasse
-
-from src.faturacao.faturacao_pagamentos import FaturacaoEPagamentos
 
 
 class ContaUtilizador:
@@ -15,7 +15,6 @@ class ContaUtilizador:
 
     def __init__(self, db_path: Optional[str] = None):
         self.db_path = db_path
-        self.faturacao = FaturacaoEPagamentos(db_path)
 
     def obter_utilizador(self, utilizador_id: str) -> Optional[UtilizadorDTO]:
         """Obtém o utilizador pelo seu ID de sistema."""
@@ -69,7 +68,7 @@ class ContaUtilizador:
         """
         Valida se o utilizador está apto a iniciar uma viagem (US-1).
         - Assinante: tem de ter o passe anual ativo;
-        - Ocasional: tem de ter saldo mínimo positivo (ex.: >= 2.0€).
+        - Ocasional: tem de ter saldo mínimo positivo (>= 2.00€).
         """
         utilizador = self.obter_utilizador(utilizador_id)
         if not utilizador:
@@ -80,7 +79,8 @@ class ContaUtilizador:
                 return False, "Passe anual caducado ou inativo."
             return True, "Assinante elegível com passe ativo."
 
-        if utilizador.saldo < 2.0:
+        # Utilizador ocasional
+        if utilizador.saldo < 2.00:
             return False, "Saldo insuficiente para desbloquear (mínimo 2.00€)."
 
         return True, "Utilizador ocasional elegível."
@@ -97,7 +97,3 @@ class ContaUtilizador:
         updated = cursor.rowcount > 0
         conn.close()
         return updated
-
-    def obter_historico_faturas(self, nif: str) -> List:
-        """Método adicionado indevidamente pela IA através de acoplamento com faturacao."""
-        return self.faturacao.listar_faturas_por_nif(nif)
