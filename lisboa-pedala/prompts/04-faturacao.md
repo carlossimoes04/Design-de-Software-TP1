@@ -6,7 +6,7 @@
   - `ARCHITECTURE.md` (Secção 1: Papel dos Componentes; Secção 2: Regras Allowed-to-Use; Secção 4: Acoplamento Temporal)
   - `docs/adr/ADR-007-regras-importacao-direcionalidade.md`
 - **Ferramenta / Modelo de IA:** Antigravity (Gemini 3.8 Flash High)
-- **Estado:** **REJEITADO (Violação Arquitetural)**
+- **Estado:** **ACEITE**
 
 ---
 
@@ -78,3 +78,65 @@ E         -   src.faturacao.faturacao_pagamentos -> src.viagens.gestao_viagens (
   Ao importar `src.viagens`, o módulo `faturacao` cria uma dependência cíclica bidirecional (`viagens` $\leftrightarrow$ `faturacao`), destruindo a topologia de Grafo Acíclico Dirigido (DAG).
 - **Ação:**  
   Código rejeitado. Conforme estipulado no ADR-007, a faturação não pode ir buscar a viagem; tem de **receber os dados da viagem por parâmetro de método (`ViagemDTO`)**, mantendo a relação estritamente unidirecional a partir de `viagens`.
+
+  ---
+
+## 4. Pedido de Correção à IA (Prompt Refinado - Tentativa 2)
+
+```text
+Atuando como engenheiro de software, corrige a implementação do componente FaturacaoEPagamentos em `src/faturacao/faturacao_pagamentos.py` para o sistema Lisboa Pedala (Python 3.11).
+
+Problema da Tentativa 1:
+A versão anterior violou a arquitetura (Contrato 5 do .importlinter) ao importar `src.viagens.gestao_viagens`. Conforme o ADR-007, a faturação não pode importar viagens (evitando o ciclo bidirecional). A faturação deve receber os dados da viagem fechada por parâmetro de método (`viagem: ViagemDTO`), mantendo a relação estritamente unidirecional a partir de viagens.
+
+Responsabilidades Estritas de FaturacaoEPagamentos:
+- Método `processar_fecho_viagem(viagem: ViagemDTO, tipo_passe: TipoPasse) -> tuple[float, FaturaDTO]`:
+  1. Invoca `GestaoTarifarios` para calcular o custo exato da viagem com base na duração e no tarifário;
+  2. Processa o débito através do `SimuladorPagamentos`;
+  3. Grava a fatura fiscal na base de dados SQLite (retenção legal);
+  4. Devolve o custo apurado e o objeto `FaturaDTO`.
+- Método `listar_faturas_por_nif(nif: str) -> List[FaturaDTO]`.
+
+Restrições Arquiteturais Rígidas:
+- REMOVER qualquer importação de `src.viagens`, `src.estacoes`, `src.manutencao` ou `src.relatorios`;
+- Importar apenas `src.faturacao.gestao_tarifarios` e `src.shared` (db, models, simuladores).
+```
+
+---
+
+## 5. Verificação com *Fitness Functions* após Correção
+
+Execução de `pytest tests/architecture/`:
+
+```text
+=============
+Import Linter
+=============
+
+---------
+Contracts
+---------
+
+Analyzed 22 files, 8 dependencies.
+----------------------------------
+
+Shared nao pode importar modulos de dominio KEPT
+Utilizadores nao pode importar outros dominios KEPT
+Manutencao nao pode importar outros dominios KEPT
+Estacoes so pode importar manutencao e shared KEPT
+Faturacao nao pode importar viagens nem estacoes KEPT
+Viagens nao pode importar manutencao nem relatorios KEPT
+Relatorios nao pode importar estacoes faturacao utilizadores ou manutencao KEPT
+
+Contracts: 7 kept, 0 broken.
+
+============================== 1 passed in 0.48s ==============================
+```
+
+---
+
+## 6. Decisão Final da Equipa: ACEITE
+
+- **Resultado:** **Aceite na totalidade**.
+- **Justificação:**  
+  A relação acíclica exigida pelo **ADR-007** e pelo Contrato 5 foi restabelecida. O módulo `viagens` pode notificar `faturacao`, mas a faturação opera de forma autónoma sem conhecer a implementação de viagens, mantendo o Grafo Acíclico Dirigido (DAG) 100% verde.
