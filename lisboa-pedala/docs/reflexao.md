@@ -2,7 +2,7 @@
 
 ## 1. Introdução e Enquadramento Metodológico
 
-O sistema **Lisboa Pedala** foi criado usando *Domain-Driven Design* e *Architecture as Code*. O domínio foi dividido em componentes coesos (`GestaoViagens`, `SincronizacaoDocas`, `RelatoriosMunicipais`). Esses componentes usam uma camada de persistência relacional em SQLite. 
+O sistema **Lisboa Pedala** foi criado usando *Domain-Driven Design* e *Architecture as Code*. O domínio foi dividido em componentes coesos (`GestaoViagens`, `SincronizacaoDocas`, `RelatoriosMunicipais`, `ContaUtilizador`, `MonitorizacaoEstacoes`, `FaturacaoEPagamentos`, `RedistribuicaoFrota`, `RelatoriosMunicipais`, `ManutencaoFrota`). Esses componentes usam uma camada de persistência relacional em SQLite. 
  Este relatório resume uma análise crítica sobre os desvios, os desafios inesperados e a sensibilidade dos mecanismos de validação usados ao longo do ciclo de vida do software.
 
 
@@ -11,7 +11,23 @@ A especificação inicial do projeto mostrava os limites gerais dos componentes.
 
 
 ## 3. Análise Crítica: As Violações Arquiteturais Cometidas pela IA
-Durante o processo de programação assistida, a Inteligência Artificial mostrou alguns desvios em relação aos contratos arquiteturais definidos. Todas as infrações foram logo identificadas e rejeitadas pelas fitness functions do pipeline de integração contínua. A primeira violação aconteceu quando houve uma tentativa de acoplamento circular entre bounded contexts. A IA tentou resolver a atualização do inventário das docas offline importando funções de manipulação de viagens direto do módulo de sincronização. A regra de isolamento de pacotes do motor de testes estáticos bloqueou o commit na hora. Isso exigiu uma refatoração para contratos baseados em eventos e DTOs desacoplados. A segunda infração foi a poluição de camadas pelo acesso direto à persistência na apresentação. Numa tentativa de melhorar a listagem de dados na interface de linha de comandos, a IA colocou consultas diretas ao SQLite (`sqlite3.connect`) na camada de apresentação, passando por cima dos serviços de domínio. O teste de arquitetura barrou a execução, pois a apresentação não pode acessar a camada de dados, o que forçou a troca para interações pelos pontos públicos dos controladores de serviço. Por fim, houve uma falha no modelo de privacidade e conformidade RGPD na US-4. A IA criou um componente analítico que ligava o identificador do utilizador às coordenadas e horários das bicicletas. A auditoria estática do `ARCHITECTURE.md` encontrou a quebra da diretriz de separação de dados pessoais e minimização exigida para relatórios públicos. Isso obrigou uma reestruturação para uma agregação estatística por freguesia e para o cálculo separado de CO2 evitado.
+
+De acordo com o exigido no enunciado, foram forçados e catalogados os desvios arquiteturais da IA durante a geração dos componentes. As três violações obrigatórias foram barradas imediatamente pelas *fitness functions* em pipeline de CI, correspondendo com rigor aos registos formais presentes na pasta `prompts/`:
+
+1. **Violação 1: Quebra de Isolamento no Domínio Estável (`prompts/02-utilizadores.md`):**
+   - *Desvio da IA:* Ao implementar a gestão de saldo em `conta_utilizador.py`, a IA importou diretamente `src.faturacao.faturacao_pagamentos` para emitir o recibo de pagamento.
+   - *Deteção:* A *fitness function* falhou imediatamente no **Contrato 2** (`Utilizadores nao pode importar outros dominios`).
+   - *Correção e Princípio:* O módulo `utilizadores` deve ser estritamente estável ($C_e = 0, I = 0,00$). A orquestração do carregamento foi delegada à camada de interface (CLI), que invoca a faturação de forma independente, preservando o isolamento de `utilizadores`.
+
+2. **Violação 2: Acoplamento Ilícito entre Domínios Periféricos (`prompts/03-estacoes.md`):**
+   - *Desvio da IA:* No componente `monitorizacao_estacoes.py`, ao validar a libertação física de uma bicicleta numa doca, a IA importou `src.utilizadores.conta_utilizador` para verificar o perfil e o nome do ciclista na estação.
+   - *Deteção:* Chumbo imediato no **Contrato 4** (`Estacoes so pode importar manutencao e shared`).
+   - *Correção e Princípio:* As estações desconhecem identidades de utilizadores; operam apenas com o identificador mecânico da bicicleta e da doca. A relação de negócio entre utilizador e viagem pertence exclusivamente ao orquestrador `GestaoViagens`.
+
+3. **Violação 3: Criação de Ciclo Bidirecional e Quebra do ADP (`prompts/04-faturacao.md`):**
+   - *Desvio da IA:* No ficheiro `faturacao_pagamentos.py`, para calcular o valor a cobrar, a IA importou `src.viagens.gestao_viagens` para carregar os registos originais da base de dados, gerando um ciclo fatal (`viagens` $\leftrightarrow$ `faturacao`).
+   - *Deteção:* Violação bloqueada no **Contrato 5** (`Faturacao nao pode importar viagens nem estacoes`), prevenindo a quebra do *Acyclic Dependencies Principle* (ADP).
+   - *Correção e Princípio:* A função de cobrança foi refatorada para receber um objeto de transferência imutável (`ViagemDTO`) por parâmetro. Desta forma, a dependência tornou-se estritamente unidirecional (`viagens` $\to$ `faturacao`), mantendo o Grafo Acíclico Dirigido (DAG) validado no ADR-007.
 
 ## 4. Sensibilidade e Limitações: Funções de Fitness vs. Testes Funcionais
 
@@ -23,4 +39,4 @@ De forma geral, funções de fitness permitem comparações precisas entre difer
 A estratégia de garantia de qualidade baseou-se numa dupla abordagem, cujos limites práticos ficaram claros. De um lado, as *fitness functions* fazem uma validação estática, rigorosa e sensível, que detecta erros estruturais grandes, ciclos de dependência, importações erradas entre camadas e violações de limites de pacotes. Essas funções impedem que a arquitetura se deteriore com o tempo ou com mudanças feitas pela IA. No entanto, elas não entendem o significado do negócio. Se a estrutura dos pacotes estiver certa, a *fitness function* aprova o código, mesmo que o algoritmo de cálculo de tarifas esteja errado. Do outro lado, os testes funcionais em `pytest` fazem uma validação dinâmica e semântica, voltada para o comportamento do negócio e para as regras do domínio. Esses testes pegam erros lógicos e funcionais de ponta a ponta. Eles cobrem desde o fluxo completo de desbloqueio, percurso e faturação na US-1, passando pela checagem matemática da idempotência com hash SHA-256 no reenvio de lotes offline na US-3, até a verificação da agregação certa de métricas de sustentabilidade na US-4. Porém, não garantem a organização estrutural do código. Assim, um sistema com muitos acoplamentos desnecessários pode passar nos testes funcionais, se as funções entregarem o resultado esperado.
 
 ## 5. Conclusão
-A combinação cuidadosa de *fitness functions* estáticas com testes funcionais automatizados em `pytest` foi fundamental para o sucesso e a solidez do projeto **Lisboa Pedala**. As primeiras garantem que a forma e a estrutura geral do sistema permanecem intactas, o que assegura a resiliência necessária para o teste de regeneração em aula. Os segundos garantem que a função e a lógica de negócio atendem de forma correta aos requisitos funcionais do utilizador.
+A combinação de *fitness functions* com testes funcionais automatizados em `pytest` foi fundamental para o sucesso do projeto **Lisboa Pedala**. As primeiras garantem que a forma e a estrutura geral do sistema permanecem intactas, o que assegura a resiliência necessária para o teste de regeneração em aula. Os segundos garantem que a função e a lógica de negócio atendem de forma correta aos requisitos funcionais do utilizador.
