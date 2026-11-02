@@ -15,3 +15,8 @@ ENV/
 # 5. Configurações de IDEs (opcional, mas recomendado)
 .vscode/
 .idea/
+
+# 6. Bases de Dados locais (geradas em runtime)
+*.db
+*.sqlite
+*.sqlite3
