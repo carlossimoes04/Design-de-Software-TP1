@@ -1,6 +1,8 @@
 # Lisboa Pedala - Trabalho Prático 1
 Trabalho prático desenvolvido no âmbito da unidade curricular de **Design de Software (2026/2027)** do **Mestrado em Engenharia Informática** da Faculdade de Ciências da Universidade de Lisboa (FCUL).
 
+GitHub Repo link: https://github.com/carlossimoes04/Design-de-Software-TP1
+
 ---
 
 ## Elementos do Grupo e CODEOWNERS
