@@ -143,5 +143,13 @@ def seed_dados_iniciais(db_path: str = None):
             ('doca_campo_grande_2', 'est_campo_grande', NULL, 'LIVRE');
     """)
 
+    # Repor bicicletas nas docas originais para permitir novas demonstrações
+    cursor.execute("UPDATE docas SET bicicleta_id = 'bike_01', estado = 'OCUPADA' WHERE id = 'doca_baixa_1';")
+    cursor.execute("UPDATE docas SET bicicleta_id = NULL, estado = 'LIVRE' WHERE id = 'doca_baixa_2';")
+    cursor.execute("UPDATE docas SET bicicleta_id = 'bike_02', estado = 'OCUPADA' WHERE id = 'doca_saldanha_1';")
+    cursor.execute("UPDATE docas SET bicicleta_id = NULL, estado = 'LIVRE' WHERE id = 'doca_saldanha_2';")
+    cursor.execute("UPDATE docas SET bicicleta_id = NULL, estado = 'LIVRE' WHERE id = 'doca_campo_grande_1';")
+    cursor.execute("UPDATE docas SET bicicleta_id = NULL, estado = 'LIVRE' WHERE id = 'doca_campo_grande_2';")
+
     conn.commit()
     conn.close()
