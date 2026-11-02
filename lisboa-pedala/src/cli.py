@@ -15,7 +15,6 @@ def menu_principal():
     sincronizacao_docas = SincronizacaoDocas()
     relatorios_municipais = RelatoriosMunicipais()
 
-    utilizador_id = "user_assinante_1" # ou user_occasional_1 para testar ocasional
     doca_origem = "doca_baixa_1"
     doca_destino = "doca_saldanha_2"
 
@@ -37,7 +36,7 @@ def menu_principal():
 
         elif opcao == "2":
             try:
-                teste_us1(utilizador_id, doca_origem, doca_destino, gestao_viagens)
+                teste_us1(doca_origem, doca_destino, gestao_viagens)
             except Exception as e:
                 print(f"   [x] Erro na execução da US-1: {e}")
 
@@ -54,7 +53,7 @@ def menu_principal():
                 print(f"   [x] Erro na execução da US-4: {e}")
 
         elif opcao == "0":
-            print("\nA encerrar o Lisboa Pedala. Bom trabalho no TP1!")
+            print("\nA encerrar o Lisboa Pedala.")
             break
         else:
             print("\n[!] Opção inválida. Por favor introduz um número entre 0 e 4.")
@@ -67,9 +66,16 @@ def inicializar_db():
     except Exception as e:
         print(f"[x] Erro ao inicializar base de dados: {e}")
 
-def teste_us1(utilizador_id: str, doca_origem: str, doca_destino: str, gestao_viagens: GestaoViagens):
+def teste_us1(doca_origem: str, doca_destino: str, gestao_viagens: GestaoViagens):
     print("\n[--- Demonstração US-1: Viagem Completa ---]")
     try:
+        print("\nEscolhe o perfil para a demonstração:")
+        print("1. Assinante (Maria Silva - Passe Anual) [Padrão US-1]")
+        print("2. Ocasional (Pedro Santos - Pagamento por Viagem)")
+
+        escolha_u = input("Perfil [Enter para 1]: ").strip()
+        utilizador_id = "user_ocasional_1" if escolha_u == "2" else "user_assinante_1"
+
         print(f"-> A tentar iniciar viagem para '{utilizador_id}' a partir da doca '{doca_origem}'...")
         sucesso, msg, viagem = gestao_viagens.iniciar_viagem(utilizador_id, doca_origem)
         
